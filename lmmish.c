@@ -228,7 +228,12 @@ int main() {
 	break;
       case b_none:
 	if(fork() != 0) {
+	  savei = status;
 	  waitpid(-1, &status, 0);
+	  if(status==256) {
+	    printf("Uh, the command seems to not be findable, since it was apparently unfound...\n");
+	    status = savei;
+	  }
 	} else {
 	  execvp(args[0], args);
 	  return 1;
