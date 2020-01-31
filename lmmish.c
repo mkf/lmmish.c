@@ -168,10 +168,10 @@ int main() {
     if(iflast==-1 || iferr==status) {
       switch (which_builtin(args[0])) {
       case b_exit:
-	if(args[1]==NULL) return 0;
+	if(args[1]==NULL) exit(0);
 	if(args[2]!=NULL)
 	  printf("don't use that many arguments next time, they got discarded anyways beyond the first one\n");
-	return atoi(args[1]);
+	exit(atoi(args[1]));
       case b_cd:
 	if(args[2]!=NULL) {
 	  printf("too many arguments, we change directory to just one, 't would be lovely otherwise\n");
