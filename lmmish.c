@@ -19,6 +19,13 @@ const char* const help_text =
   "It allows escaping a ' ' space character with a '^' caret character following each one immediately.\n"
   "Its ]exit command accepts an argument of exit code.\n"
   "Its ]cd command defaults to home directory.\n"
+  "]verbosity 1 -- enables verbosity\n"
+  "]verbosity 0 -- disables\n"
+  "]iflast <i> <j> -- will only run commands if status is <i>, for <j> cycles of REPL. Both default to zero.\n"
+  "]save <k> <v> -- will save <v> (defaults to status) to store number <k> (zero to ten, defaults to zero.\n"
+  "]get <k> -- sets status to the contents of store <k>.\n"
+  "]status -- prints status.\n"
+  "]help -- prints this help, nothing else.\n"
   ;
   
 int readword(char buf[]) {
