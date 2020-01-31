@@ -25,7 +25,23 @@ int readword(char buf[]) {
   while(isspace(ch = getchar()) && ch != '\n');
   buf[0] = ch;
   if(ch == '\n') return 0;
-  for(i = 1; !isspace(ch = getchar()); i++) buf[i] = ch;
+  i = 1;
+  while(1) {
+    if(isspace(ch=getchar())) {
+      if(ch==' ') {
+	ch = getchar();
+	if(ch=='^') {
+	  buf[i++] = ' ';
+	  continue;
+	} else {
+	  ungetc(ch, stdin);
+	  ch = ' ';
+	}
+      }
+      break;
+    };
+    buf[i++] = ch;
+  }
   buf[i]=0;
   ungetc(ch, stdin);
   return 1;
