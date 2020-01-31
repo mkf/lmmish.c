@@ -6,6 +6,20 @@
 #include <sys/wait.h>
 #include <pwd.h>
 
+const char* const help_text =
+  "This is help text for this microshell project.\n"
+  "This microshell project is called\n"
+  "\tLast-Minute µkro Shell\n"
+  "and is the work, and submission, of\n"
+  "\tMichał Krzysztof Feiler\n"
+  "\t\t\t<mkf@wmi.amu.edu.pl>\n"
+  "\t\t\t s444368@wmi.amu.edu.pl\n"
+  "\n"
+  "It expands '~' to your home taken from passwd unless followed by a char other than '/'.\n"
+  "Its ]exit command accepts an argument of exit code.\n"
+  "Its ]cd command defaults to home directory.\n"
+  ;
+  
 int readword(char buf[]) {
   int ch, i;
   while(isspace(ch = getchar()) && ch != '\n');
@@ -16,11 +30,31 @@ int readword(char buf[]) {
   ungetc(ch, stdin);
   return 1;
 }
-void readargs(char* args[]) {
+void readargs(char* args[], char* home) {
   char buf[100];
   int i;
-  for(i = 0; readword(buf)!=0; i++)
-    args[i] = strdup(buf);
+  for(i = 0; readword(buf)!=0; i++) {
+    if(buf[0]=='~') {
+      switch(buf[1]) {
+      case 0:
+	args[i] = strdup(home);
+	break;
+      case '/':
+	args[i] = malloc(200);
+	int j, k, l;
+	for(j=0, k=0, l=1;j<199 && buf[l]!=0;j++)
+	  if(home[k]!=0)
+	    args[i][j] = home[k++];
+	  else
+	    args[i][j] = buf[l++];
+	args[i][199] = 0;
+	break;
+      default:
+	args[i] = strdup(buf);
+      }
+    } else
+      args[i] = strdup(buf);
+  }
   args[i] = NULL;
 }
 void free_all_in(void* t[]) {
@@ -34,6 +68,8 @@ enum builtin { b_exit,
 	       b_save,
 	       b_get,
 	       b_status,
+	       b_verbosity,
+	       b_help,
 	       b_none };
 const char* const builtins[] =
   { "exit",
@@ -42,6 +78,8 @@ const char* const builtins[] =
     "save",
     "get",
     "status",
+    "verbosity",
+    "help",
   };
 enum builtin which_builtin(char* what) {
   for(int i = 0; i<b_none; i++)
@@ -71,6 +109,7 @@ int main() {
   int iferr = -1;
   int iflast = 0;
   int store[10] = { -1 };
+  int verbosity = 0;
   register uid_t uid = geteuid();
   register struct passwd *pw = getpwuid(uid);
   char *userrunning = pw ? pw->pw_name : NULL;
@@ -92,7 +131,14 @@ int main() {
     } 
     printf("[%s] $ ", nbuf);
     char* args[100] = { NULL };
-    readargs(args);
+    readargs(args, pw->pw_dir);
+    if(verbosity) {
+      putchar('[');
+      int iver = 0;
+      while(args[iver]!=NULL)
+	printf("«%s» ", args[iver++]); 
+      putchar('\n');
+    }
     if(args[0]==NULL) continue;
     int savei;
     if(iferr==status) {
@@ -101,6 +147,8 @@ int main() {
 	return args[1]==NULL ? 0 : atoi(args[1]);
       case b_cd:
 	status = -chdir(args[1]==NULL ? pw->pw_dir : args[1]);
+	if(status)
+	  printf("so this is supposed to be a nice notif that the directory change failed\n");
 	break;
       case b_ifs:
 	iferr = args[1]==NULL ? 0 : atoi(args[1]);
@@ -108,7 +156,7 @@ int main() {
 	break;
       case b_save:
 	savei = args[1]==NULL ? 0 : atoi(args[1]);
-	status = savei>=0 && savei<10;
+	status = savei<0 || savei>=10;
 	if(status==0)
 	  store[savei] = args[2]==NULL ? status : atoi(args[2]);
 	break;
@@ -120,6 +168,25 @@ int main() {
       case b_status:
 	printf("%d\n", status);
 	break;
+      case b_verbosity:
+	if(args[1]==NULL)
+	  status = 5;
+	else {
+	  savei = atoi(args[1]);
+	  switch(savei) {
+	  case 0:
+	  case 1:
+	    verbosity = savei;
+	    status = 0;
+	    break;
+	  default:
+	    status = 2;
+	  }
+	}
+	break;
+      case b_help:
+	puts(help_text);
+	break;
       case b_none:
 	if(fork() != 0) {
 	  waitpid(-1, &status, 0);
@@ -128,6 +195,8 @@ int main() {
 	  return 1;
 	}
       }
+    } else if(verbosity) {
+      printf("ifs is active and inhibited this action\n");
     }
     if (iflast==0) iferr = status;
     else if(iflast<0) iflast=0;
