@@ -124,7 +124,7 @@ void shortentilde(char* in, char* what) {
 int main() {
   int status = -1;
   int iferr = -1;
-  int iflast = 0;
+  int iflast = -1;
   int store[10] = { -1 };
   int verbosity = 0;
   register uid_t uid = geteuid();
@@ -158,18 +158,33 @@ int main() {
     }
     if(args[0]==NULL) continue;
     int savei;
-    if(iferr==status) {
+    if(iflast==-1 || iferr==status) {
       switch (which_builtin(args[0])) {
       case b_exit:
-	return args[1]==NULL ? 0 : atoi(args[1]);
+	if(args[1]==NULL) return 0;
+	if(args[2]!=NULL)
+	  printf("don't use that many arguments next time, they got discarded anyways beyond the first one\n");
+	return atoi(args[1]);
       case b_cd:
+	if(args[2]!=NULL) {
+	  printf("too many arguments, we change directory to just one, 't would be lovely otherwise\n");
+	  break;
+	}
 	status = -chdir(args[1]==NULL ? pw->pw_dir : args[1]);
 	if(status)
 	  printf("so this is supposed to be a nice notif that the directory change failed\n");
 	break;
       case b_ifs:
-	iferr = args[1]==NULL ? 0 : atoi(args[1]);
-	iflast = args[2]==NULL ? 0 : atoi(args[2]);
+	iferr = 0; iflast = 0;
+        for(savei = 1; savei < 4 && args[savei]!=NULL; savei++);
+	switch(savei) {
+	case 4:
+	  printf("This is a warning, the arguments beyond those two numbers are discarded\n");
+	case 3:
+	  iflast = atoi(args[2]);
+	case 2:
+	  iferr = atoi(args[1]);
+	}
 	break;
       case b_save:
 	savei = args[1]==NULL ? 0 : atoi(args[1]);
@@ -216,7 +231,7 @@ int main() {
       printf("ifs is active and inhibited this action\n");
     }
     if (iflast==0) iferr = status;
-    else if(iflast<0) iflast=0;
+    else if(iflast<0) iflast=-1;
     else iflast--;
     
     free_all_in((void**)args);
