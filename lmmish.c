@@ -134,6 +134,7 @@ int main() {
   int iflast = -1;
   int store[10] = { -1 };
   int verbosity = 0;
+  int color = 2;
   register uid_t uid = geteuid();
   register struct passwd *pw = getpwuid(uid);
   char *userrunning = pw ? pw->pw_name : NULL;
@@ -153,7 +154,8 @@ int main() {
       else
 	snprintf(nbuf, 1000, "someone in %s", buf);
     } 
-    printf("[%s] $ ", nbuf);
+    printf("\033" "[1;3%dm" "[%s]" "\033" "[0m" " : ", color, nbuf);
+    color = 2;
     char* args[100] = { NULL };
     readargs(args, pw->pw_dir);
     if(verbosity) {
@@ -233,6 +235,7 @@ int main() {
 	  if(status==256) {
 	    printf("Uh, the command seems to not be findable, since it was apparently unfound...\n");
 	    status = savei;
+	    color = 4;
 	  }
 	} else {
 	  execvp(args[0], args);
@@ -245,6 +248,8 @@ int main() {
     if (iflast==0) iferr = status;
     else if(iflast<0) iflast=-1;
     else iflast--;
+
+    if(color!=4) color = status ? 1 : 2;
     
     free_all_in((void**)args);
   }
