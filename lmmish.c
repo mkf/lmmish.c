@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <sys/wait.h>
 #include <pwd.h>
+#include <errno.h>
 
 const char* const help_text =
   "This is help text for this microshell project.\n"
@@ -232,13 +233,24 @@ int main() {
 	if(fork() != 0) {
 	  savei = status;
 	  waitpid(-1, &status, 0);
-	  if(status==256) {
-	    printf("Uh, the command seems to not be findable, since it was apparently unfound...\n");
-	    status = savei;
-	    color = 4;
-	  }
 	} else {
-	  execvp(args[0], args);
+	  int res = execvp(args[0], args);
+	  if (res==-1) {
+	    printf("%s: ...error... (%d...): %d... ", args[0], res, errno);
+	    char* errtext = strerror(errno);
+	    int back = 0;
+	    int spacji = 1;
+	    while(errtext[back] != 0){
+	      if(errtext[back]==' ' && (spacji++)%2==0) {
+		putchar('.'); putchar('.'); putchar('.');
+	      }
+	      putchar(errtext[back++]);
+	    }
+	    putchar('.');
+	    putchar('.');
+	    putchar('.');
+	    putchar('\n');
+	  }
 	  return 1;
 	}
       }
