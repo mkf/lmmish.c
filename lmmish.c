@@ -16,7 +16,7 @@ const char* const help_text =
   "\t\t\t<mkf@wmi.amu.edu.pl>\n"
   "\t\t\t s444368@wmi.amu.edu.pl\n"
   "\n"
-  "It expands '~' to your home taken from passwd unless followed by a char other than '/'.\n"
+  "It expands '~' to your user's taken from passwd unless followed by a char other than '/'.\n"
   "It allows escaping a ' ' space character with a '^' caret character following each one immediately.\n"
   "Its ]exit command accepts an argument of exit code.\n"
   "Its ]cd command defaults to home directory.\n"
