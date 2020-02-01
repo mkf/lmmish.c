@@ -55,10 +55,12 @@ int readword(char buf[]) {
   ungetc(ch, stdin);
   return 1;
 }
+FILE* history;
 void readargs(char* args[], char* home) {
   char buf[100];
   int i;
   for(i = 0; readword(buf)!=0; i++) {
+    fprintf(history, "%s", buf);
     if(buf[0]=='~') {
       switch(buf[1]) {
       case 0:
@@ -79,7 +81,9 @@ void readargs(char* args[], char* home) {
       }
     } else
       args[i] = strdup(buf);
+    fputc(0, history);
   }
+  fputc('\n', history);
   args[i] = NULL;
 }
 void free_all_in(void* t[]) {
@@ -145,7 +149,15 @@ void sighandler(int signalnumber) {
 	 (result==0 ? "successfully" :
 	  (result==1 ? "to a failure" : "but that did a weird thing")));
 }
-
+char* concat(const char *s1, const char *s2)
+{
+    const size_t l1 = strlen(s1);
+    const size_t l2 = strlen(s2);
+    char *result = malloc(l1+l2+1);
+    memcpy(result, s1, l1);
+    memcpy(result+l1, s2, l2+1);
+    return result;
+}
 int main() {
   int status = -1;
   int iferr = -1;
@@ -156,6 +168,7 @@ int main() {
   register uid_t uid = geteuid();
   register struct passwd *pw = getpwuid(uid);
   char *userrunning = pw ? pw->pw_name : NULL;
+  history = fopen(concat(pw->pw_dir,"/history_lmmish.dat"), "a+");
   while(1) {
     forkresult = 0;
     signal(SIGINT, sighandler);
