@@ -129,6 +129,18 @@ void shortentilde(char* in, char* what) {
       in[j]=in[j+i];
   };
 }
+
+int forkresult;
+void sighandler(int signalnumber) {
+  printf("killing our process with the received signal %d %s\n",
+	 signalnumber, strsignal(signalnumber));
+  int result = kill(forkresult, signalnumber);
+  printf("done the killing, %s.\n", result==64 ?
+	 "it tried killing more then one" :
+	 (result==0 ? "successfully" :
+	  (result==1 ? "to a failure" : "but that did a weird thing")));
+}
+
 int main() {
   int status = -1;
   int iferr = -1;
@@ -230,20 +242,21 @@ int main() {
 	puts(help_text);
 	break;
       case b_none:
-	int forkresult = fork();
-	if(forkresult != 0) {
+	if((forkresult = fork()) != 0) {
 	  if(forkresult==-1)
-	    print("failed to fork. error %d. Says, «%s».", errno, strerror(errno));
+	    printf("failed to fork. error %d. Says, «%s».\n", errno, strerror(errno));
+	  else
+	    signal(2, sighandler);
 	  /*savei = status;*/
 	  savei = waitpid(-1, &status, 0);
-	  if(waitpid==-1)
-	    print("waitpid failed, error %d. Says, «%s».", errno, strerror(errno));
+	  if(savei==-1)
+	    printf("waitpid failed, error %d. Says, «%s».\n", errno, strerror(errno));
 	  else {
 	    if(WIFEXITED(status))
 	      status = WEXITSTATUS(status);
 	    else if(WIFSIGNALED(status)) {
 	      int signalnumber = WTERMSIG(status);
-	      printf("an uncaught signal %d, which is %s", signalnumber, strsignal(signalnumber));
+	      printf("an uncaught signal %d, which is %s.\n", signalnumber, strsignal(signalnumber));
 	    }
 	  }
 	} else {
