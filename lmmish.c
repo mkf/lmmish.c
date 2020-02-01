@@ -230,9 +230,22 @@ int main() {
 	puts(help_text);
 	break;
       case b_none:
-	if(fork() != 0) {
-	  savei = status;
-	  waitpid(-1, &status, 0);
+	int forkresult = fork();
+	if(forkresult != 0) {
+	  if(forkresult==-1)
+	    print("failed to fork. error %d. Says, «%s».", errno, strerror(errno));
+	  /*savei = status;*/
+	  savei = waitpid(-1, &status, 0);
+	  if(waitpid==-1)
+	    print("waitpid failed, error %d. Says, «%s».", errno, strerror(errno));
+	  else {
+	    if(WIFEXITED(status))
+	      status = WEXITSTATUS(status);
+	    else if(WIFSIGNALED(status)) {
+	      int signalnumber = WTERMSIG(status);
+	      printf("an uncaught signal %d, which is %s", signalnumber, strsignal(signalnumber));
+	    }
+	  }
 	} else {
 	  int res = execvp(args[0], args);
 	  if (res==-1) {
