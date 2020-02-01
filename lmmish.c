@@ -54,18 +54,21 @@ int readword(char buf[]) {
   ungetc(ch, stdin);
   return 1;
 }
+const char* someoneshome(const char* whose) {
+  return getpwnam(whose)->pw_dir;
+}
 void readargs(char* args[], char* home) {
   char buf[100];
   int i;
   for(i = 0; readword(buf)!=0; i++) {
     if(buf[0]=='~') {
+      int j, k, l;
       switch(buf[1]) {
       case 0:
 	args[i] = strdup(home);
 	break;
       case '/':
 	args[i] = malloc(200);
-	int j, k, l;
 	for(j=0, k=0, l=1;j<199 && buf[l]!=0;j++)
 	  if(home[k]!=0)
 	    args[i][j] = home[k++];
@@ -73,8 +76,24 @@ void readargs(char* args[], char* home) {
 	    args[i][j] = buf[l++];
 	args[i][199] = 0;
 	break;
+	/*default:
+	  args[i] = strdup(buf); break;*/
       default:
-	args[i] = strdup(buf);
+	args[i] = malloc(200);
+	int u;
+	char bef;
+	for(u=2; u<100 && buf[u]!='/' && buf[u]!=0; u++);
+	bef = buf[u];
+	buf[u] = 0;
+	home = someoneshome(buf);
+	buf[u] = bef;
+	for(j=0, k=0, l=u-1; j<199 && buf[l]!=0;j++)
+	  if(home[k]!=0)
+	    args[i][j] = home[k++];
+	  else
+	    args[i][j] = buf[l++];
+	args[i][199] = 0;
+	break;
       }
     } else
       args[i] = strdup(buf);
