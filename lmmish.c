@@ -132,7 +132,12 @@ void shortentilde(char* in, char* what) {
 
 int forkresult;
 void sighandler(int signalnumber) {
-  printf("killing our process with the received signal %d %s\n",
+  if(forkresult==0) {
+    printf("\nreceived signal %d %s, exiting with zero\n",
+	   signalnumber, strsignal(signalnumber));
+    exit(0);
+  }
+  printf("\nkilling our process with the received signal %d %s\n",
 	 signalnumber, strsignal(signalnumber));
   int result = kill(forkresult, signalnumber);
   printf("done the killing, %s.\n", result==64 ?
@@ -152,6 +157,8 @@ int main() {
   register struct passwd *pw = getpwuid(uid);
   char *userrunning = pw ? pw->pw_name : NULL;
   while(1) {
+    forkresult = 0;
+    signal(2, sighandler);
     char buf[1000] = { 0 };
     char *cbuf = getcwd(buf, 900);
     char nbuf[1000] = { 0 };
@@ -245,8 +252,6 @@ int main() {
 	if((forkresult = fork()) != 0) {
 	  if(forkresult==-1)
 	    printf("failed to fork. error %d. Says, «%s».\n", errno, strerror(errno));
-	  else
-	    signal(2, sighandler);
 	  /*savei = status;*/
 	  savei = waitpid(-1, &status, 0);
 	  if(savei==-1)
