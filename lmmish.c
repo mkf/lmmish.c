@@ -158,7 +158,7 @@ int main() {
   char *userrunning = pw ? pw->pw_name : NULL;
   while(1) {
     forkresult = 0;
-    signal(2, sighandler);
+    signal(SIGINT, sighandler);
     char buf[1000] = { 0 };
     char *cbuf = getcwd(buf, 900);
     char nbuf[1000] = { 0 };
