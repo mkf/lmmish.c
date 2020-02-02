@@ -159,7 +159,7 @@ char* concat(const char *s1, const char *s2)
     return result;
 }
 int main() {
-  int status = -1;
+  int status = 0;
   int iferr = -1;
   int iflast = -1;
   int store[10] = { -1 };
