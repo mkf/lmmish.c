@@ -165,8 +165,8 @@ int main() {
   int store[10] = { -1 };
   int verbosity = 0;
   int color = 2;
-  register uid_t uid = geteuid();
-  register struct passwd *pw = getpwuid(uid);
+  uid_t uid = geteuid();
+  struct passwd *pw = getpwuid(uid);
   char *userrunning = pw ? pw->pw_name : NULL;
   history = fopen(concat(pw->pw_dir,"/history_lmmish.dat"), "a+");
   while(1) {
@@ -200,6 +200,7 @@ int main() {
     }
     if(args[0]==NULL) continue;
     int savei;
+    int whereargsnull;
     if(iflast==-1 || iferr==status) {
       switch (which_builtin(args[0])) {
       case b_exit:
@@ -229,23 +230,42 @@ int main() {
 	}
 	break;
       case b_save:
-	savei = args[1]==NULL ? 0 : atoi(args[1]);
-	status = savei<0 || savei>=10;
-	if(status==0)
-	  store[savei] = args[2]==NULL ? status : atoi(args[2]);
+	for(whereargsnull = 1; whereargsnull < 4 && args[whereargsnull]!=NULL; whereargsnull++);
+	int to_save = status;
+	savei = 0;
+	switch(whereargsnull) {
+	case 4:
+	  puts("This is a warning, the arguments beyond those two numbers are discarded.");
+	case 3:
+	  to_save = atoi(args[2]);
+	case 2:
+	  savei = atoi(args[1]);
+	case 1:
+	  if(savei>=0 && savei<10)
+	    store[savei] = to_save;
+	}
 	break;
       case b_get:
-	savei = args[1]==NULL ? 0 : atoi(args[1]);
+	for(whereargsnull = 1; whereargsnull < 3 && args[whereargsnull]!=NULL; whereargsnull++);
+	savei = 0;
+	switch(whereargsnull) {
+	case 3:
+	  puts("This is a warning, the arguments beyond the one number are discarded.");
+	case 2:
+	  savei = atoi(args[1]);
+	}
 	if(savei>=0 && savei<10)
 	  status = store[savei];
 	break;
       case b_status:
+	if(args[1]!=NULL) puts("This command does not set status or compare it or anything, don't give it arguments.");
 	printf("%d\n", status);
 	break;
       case b_verbosity:
-	if(args[1]==NULL)
+	if(args[1]==NULL) {
 	  status = 5;
-	else {
+	  puts("Verbostity must be explicitly set to zero or one.");
+	} else if(args[2]==NULL){
 	  savei = atoi(args[1]);
 	  switch(savei) {
 	  case 0:
@@ -256,10 +276,17 @@ int main() {
 	  default:
 	    status = 2;
 	  }
+	} else {
+	  status = 6;
+	  puts("Too many arguments, give just one zero or one to set the verbosity level to!");
 	}
 	break;
       case b_help:
 	puts(help_text);
+	for(savei = 1; savei<100 && args[savei]!=NULL;
+	    printf("I did not provide any specific help for %s.\n", args[savei++]));
+	if(--savei)
+	  printf("You asked for %d specific topics, the command that just has one general text.\n", savei);
 	break;
       case b_none:
 	if((forkresult = fork()) != 0) {
