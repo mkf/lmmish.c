@@ -28,13 +28,33 @@ const char* const help_text =
   "]status -- prints status.\n"
   "]help -- prints this help, nothing else.\n"
   ;
-  
+
+/*
+ * readword is a procedure for getting a word, null-delimited, into buf.
+ * Spaces can be escaped bz immediately succeeding them with '^'.
+ * readword (WRITES TO GIVEN char[] named buf, RETURNS int of {0,1}):
+ * - first passes (getchar-s) through whitespace (isspace but non-newline)
+ *   characters
+ * - IF first non-whitespace is a newline WRITES buf: {0: '\n'} and RETURNS 0).
+ * - OTHERWISE, WRITES each non-isspace character to buf[0...] unless it's a
+ *   space followed by a '^' in which case space gets written and '^' is not
+ *   counted
+ * - WRITES 0 to buf[i], after the end of word, for a null-delimited string
+ * - the first non-isspace character is ungetc-ed back into stdin
+ * - RETURNS 1
+ */
 int readword(char buf[]) {
   int ch, i;
   while(isspace(ch = getchar()) && ch != '\n');
+  /* WRITES first read non-whitespace character to buf[0] */
   buf[0] = ch;
+  /* if it was a newline then RETURNS 0 (RESULTING buf: {0: '\n'}) */
   if(ch == '\n') return 0;
   i = 1;
+  /*
+   * WRITES each non-isspace character to buf[1...] unless it's a space
+   * followed by a '^' in which case space gets written and '^' is not counted.
+   */
   while(1) {
     if(isspace(ch=getchar())) {
       if(ch==' ') {
@@ -51,11 +71,31 @@ int readword(char buf[]) {
     };
     buf[i++] = ch;
   }
+  /* WRITES 0 to buf[i], after the end of word, for a null-delimited string */
   buf[i]=0;
+  /* the first non-isspace character is ungetc-ed back into stdin */
   ungetc(ch, stdin);
   return 1;
 }
+/*
+ * history - file that we write to, commands delimited by newline, but
+ * words delimited by null
+ */
 FILE* history;
+/*
+ * readargs (WRITES TO GIVEN char*[] named args,
+ *           READS GIVEN char* named home,
+ *           WRITES TO SCOPE FILE* named `history`):
+ * - for consecutively incrementing integer i, has `readword` write to a buffer of 100
+ * - as long as `readword` returns non-zero, it WRITES TO `history` the result (buffer),
+ *   then:
+ *   - if a word is just a tilde (~) on its own or has leading tilde followed by a slash (/),
+ *     it WRITES TO args[i] a pointer to a newly allocated string with the word with
+ *     tilde swapped out for contents of `home`
+ *   - otherwise it WRITES TO args[i] a pointer to a newly allocated string with the word.
+ * - once `readword` returns zero, it writes a newline to `history`, and delimits args
+ *   with a null pointer at args[i] ( WRITES null TO args[i] )
+ */
 void readargs(char* args[], char* home) {
   char buf[100];
   int i;
